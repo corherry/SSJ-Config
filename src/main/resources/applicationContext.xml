@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+  <!--引入dbcp数据源属性文件 -->
+  <context:property-placeholder location="classpath:jdbc.properties" ignore-unresolvable="true" />
+
+  <!-- aop代理 -->
+  <aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+
+  <!-- 扫包 -->
+  <context:component-scan base-package="com.oocl.admin">
+    <!-- Controller不扫 -->
+    <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"></context:exclude-filter>
+  </context:component-scan>
+
+  <!-- dbcp数据源配置 -->
+  <bean id="ds" class="org.apache.commons.dbcp.BasicDataSource">
+    <property name="driverClassName" value="${jdbc.driver}"></property>
+    <property name="url" value="${jdbc.url}"></property>
+    <property name="username" value="${jdbc.username}"></property>
+    <property name="password" value="${jdbc.password}"></property>
+  </bean>
+
+  <!-- jpa适配器 -->
+  <bean id="hibernateJpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+    <property name="databasePlatform" value="org.hibernate.dialect.OracleDialect" />
+  </bean>
+
+
+  <!-- JPA实体管理工厂的配置 使用@PersistenceContext会自动注入EntityManager,可以使用 @PersistenceUnit注入entityManagerFactory -->
+  <bean id="entityManagerFactory"
+        class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+    <property name="dataSource" ref="ds" />
+    <property name="persistenceUnitName" value="em"></property>
+    <property name="jpaVendorAdapter" ref="hibernateJpaVendorAdapter" />
+    <property name="packagesToScan" value="com.oocl.admin.model" /><!--待扫描的实体类包，不再需要persistence.xml了 -->
+    <property name="jpaProperties">
+      <props>
+        <prop key="hibernate.ejb.naming_strategy">org.hibernate.cfg.ImprovedNamingStrategy</prop>
+        <prop key="hibernate.show_sql">true</prop>
+        <prop key="hibernate.format_sql">true</prop>
+        <prop key="hibernate.hbm2ddl.auto">update</prop>
+      </props>
+    </property>
+  </bean>
+
+
+  <!-- Jpa 事务配置 -->
+  <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+    <property name="entityManagerFactory" ref="entityManagerFactory" />
+  </bean>
+
+  <tx:annotation-driven transaction-manager="transactionManager"
+                        proxy-target-class="true" />
+
+
+</beans>
